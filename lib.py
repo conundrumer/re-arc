@@ -185,8 +185,10 @@ def choose_eval_tasks(metadata: dict[str, TaskMetadata], seed: int):
             task_to_representative[task_id] = representative
 
     # Filter metadata
+    metadata_items = list(metadata.items())
+    random.shuffle(metadata_items)
     filtered = {}
-    for task_id, task_metadata in metadata.items():
+    for task_id, task_metadata in metadata_items:
         # Filter by icecuber unsolved
         if task_id not in icecuber_unsolved:
             continue
@@ -272,7 +274,7 @@ def print_dataset_tasks(
     seed: int
 ):
     """
-    Generate and print JSONs for each task individually.
+    Generate and print each task in the format: taskId{...taskData}
 
     Args:
         task_metadata: Dictionary mapping task_id to TaskMetadata
@@ -281,8 +283,7 @@ def print_dataset_tasks(
     import json
 
     for task_id, task in generate_dataset(task_metadata, seed=seed):
-        task_json = {task_id: task}
-        print(json.dumps(task_json, separators=(',', ':')))
+        print(f"{task_id}{json.dumps(task, separators=(',', ':'))}")
 
 def save_dataset_to_file(
     task_metadata: dict[str, TaskMetadata],
@@ -326,6 +327,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate ARC dataset')
     parser.add_argument('--seed', type=int, default=int(time.time()), help='Random seed for reproducibility')
     parser.add_argument('--output', type=str, help='Output file path (for save mode)')
+    parser.add_argument('--ids-only', action='store_true', help='Print only task IDs')
 
     args = parser.parse_args()
 
@@ -333,10 +335,10 @@ if __name__ == '__main__':
     metadata = load_task_metadata()
     metadata = choose_eval_tasks(metadata, args.seed)
 
-    # for task_id in metadata.keys():
-    #     print(task_id)
-
-    if args.output:
+    if args.ids_only:
+        for task_id in metadata.keys():
+            print(task_id)
+    elif args.output:
         solvable_count = sum(
             1 for m in metadata.values()
             if m['color_invariance'] >= INVARIANCE_THRESHOLD and m['dihedral_invariance'] >= INVARIANCE_THRESHOLD
