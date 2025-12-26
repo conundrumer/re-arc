@@ -5,7 +5,6 @@ import json
 
 from random import seed as set_seed
 
-import dsl
 from dsl import *
 
 import utils
@@ -72,7 +71,7 @@ def demo_generator(key, n=6):
     generated_examples = [generator(0, 1) for k in range(n)]
     plot_task(original_task)
     plot_task(generated_examples)
-    
+
 
 def generate_dataset(
     path: str = 're_arc',
