@@ -152,7 +152,7 @@ def generate_examples(
     return examples
 
 MIN_STEPS = 12
-def choose_eval_tasks(metadata: dict[str, TaskMetadata], seed):
+def choose_eval_tasks(metadata: dict[str, TaskMetadata], seed: int):
     """
     Filter tasks for evaluation based on:
     1. Tasks unsolved by icecuber (score == -1)
@@ -240,7 +240,8 @@ def generate_dataset(
     # Generate examples for each task
     for task_id, metadata in task_metadata.items():
         # Set seed for this task (deterministic but different per task)
-        random.seed(seed + hash(task_id))
+        # assuming task_id is 32bit hex num
+        random.seed(seed ^ int(task_id, 16))
 
         # Generate all examples with appropriate transformations
         # Apply transforms if invariance < threshold (more dependent than invariant)
