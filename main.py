@@ -14,6 +14,8 @@ from utils import *
 import generators
 import verifiers
 
+from plot import plot_task
+
 
 
 def get_generators() -> dict:
