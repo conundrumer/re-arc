@@ -17,7 +17,7 @@ Integer = int
 IntegerTuple = Tuple[Integer, Integer]
 Numerical = Union[Integer, IntegerTuple]
 IntegerSet = FrozenSet[Integer]
-Grid = Tuple[Tuple[Integer]]
+Grid = Tuple[Tuple[Integer, ...], ...]
 Cell = Tuple[Integer, IntegerTuple]
 Object = FrozenSet[Cell]
 Objects = FrozenSet[Object]
@@ -119,7 +119,7 @@ def multiply(
     elif isinstance(a, int) and isinstance(b, tuple):
         return (a * b[0], a * b[1])
     return (a[0] * b, a[1] * b)
-    
+
 
 def divide(
     a: Numerical,
@@ -637,7 +637,7 @@ def mostcolor(
     """ most common color """
     values = [v for r in element for v in r] if isinstance(element, tuple) else [v for v, _ in element]
     return max(set(values), key=values.count)
-    
+
 
 def leastcolor(
     element: Element
@@ -1326,7 +1326,7 @@ def index(
     h, w = len(grid), len(grid[0])
     if not (0 <= i < h and 0 <= j < w):
         return None
-    return grid[loc[0]][loc[1]] 
+    return grid[loc[0]][loc[1]]
 
 
 def canvas(
