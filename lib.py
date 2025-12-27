@@ -341,6 +341,10 @@ if __name__ == '__main__':
             for task_id, task_metadata in metadata.items()
             if task_metadata['num_steps'] == 1
         }
+        # Add one more test pair to the first task
+        if metadata:
+            first_task_id = next(iter(metadata))
+            metadata[first_task_id]['num_test'] += 1
     else:
         metadata = choose_eval_tasks(metadata, args.seed)
 
