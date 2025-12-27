@@ -151,7 +151,7 @@ def generate_examples(
 
     return examples
 
-MIN_STEPS = 12
+MIN_STEPS = 14
 def choose_eval_tasks(metadata: dict[str, TaskMetadata], seed: int):
     """
     Filter tasks for evaluation based on:
@@ -197,8 +197,10 @@ def choose_eval_tasks(metadata: dict[str, TaskMetadata], seed: int):
             continue
 
         # Choose one from duplicates
-        representative = task_to_representative.get(task_id, task_id)
-        if representative != task_id:
+        # task_id = task_to_representative.get(task_id, task_id)
+
+        # actually let's exclude the duplicate to get a nice round number of tasks: 120
+        if any(task_id in group for group in duplicate_groups):
             continue
 
         filtered[task_id] = task_metadata
