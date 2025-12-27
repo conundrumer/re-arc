@@ -328,12 +328,21 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=int(time.time()), help='Random seed for reproducibility')
     parser.add_argument('--output', type=str, help='Output file path (for save mode)')
     parser.add_argument('--ids-only', action='store_true', help='Print only task IDs')
+    parser.add_argument('--dev', action='store_true', help='Choose tasks with num_steps == 1 for development')
 
     args = parser.parse_args()
 
     # Load and filter metadata
     metadata = load_task_metadata()
-    metadata = choose_eval_tasks(metadata, args.seed)
+    if args.dev:
+        # Filter for tasks with num_steps == 1
+        metadata = {
+            task_id: task_metadata
+            for task_id, task_metadata in metadata.items()
+            if task_metadata['num_steps'] == 1
+        }
+    else:
+        metadata = choose_eval_tasks(metadata, args.seed)
 
     if args.ids_only:
         for task_id in metadata.keys():
