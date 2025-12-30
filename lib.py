@@ -247,16 +247,27 @@ def generate_dataset(
         # assuming task_id is 32bit hex num
         random.seed(seed ^ int(task_id, 16))
 
+        # adds one more train to reduce likelihood of tasks with insufficient examples
+        num_train = metadata['num_train'] + 1
+        num_examples = num_train + metadata['num_test']
+
+        # Generate random difficulty range between [0, 1] and [0.5, 0.5]
+        # Interpolate between full range and narrow middle range
+        t = random.random()  # 0 to 1
+        min_diff = 0.5 * (1 - t)  # goes from 0.5 to 0
+        max_diff = 0.5 + 0.5 * t  # goes from 0.5 to 1
+        difficulty_range = (min_diff, max_diff)
+
         # Generate all examples with appropriate transformations
         # Apply transforms if invariance < threshold (more dependent than invariant)
-        num_examples = metadata['num_train'] + metadata['num_test']
         while True:
             try:
                 examples = generate_examples(
                     task_id,
                     num_examples=num_examples,
                     color_transform=metadata['color_invariance'] < INVARIANCE_THRESHOLD,
-                    dihedral_transform=metadata['dihedral_invariance'] < INVARIANCE_THRESHOLD
+                    dihedral_transform=metadata['dihedral_invariance'] < INVARIANCE_THRESHOLD,
+                    difficulty_range=difficulty_range
                 )
                 break
             except TransformError:
@@ -276,7 +287,7 @@ def print_dataset_tasks(
     seed: int
 ):
     """
-    Generate and print each task in the format: taskId{...taskData}
+    Generate and print each task in the format: {...taskData}
 
     Args:
         task_metadata: Dictionary mapping task_id to TaskMetadata
@@ -284,8 +295,8 @@ def print_dataset_tasks(
     """
     import json
 
-    for task_id, task in generate_dataset(task_metadata, seed=seed):
-        print(f"{task_id}{json.dumps(task, separators=(',', ':'))}")
+    for _, task in generate_dataset(task_metadata, seed=seed):
+        print(json.dumps(task, separators=(',', ':')))
 
 def save_dataset_to_file(
     task_metadata: dict[str, TaskMetadata],
@@ -329,7 +340,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate ARC dataset')
     parser.add_argument('--seed', type=int, default=int(time.time()), help='Random seed for reproducibility')
     parser.add_argument('--output', type=str, help='Output file path (for save mode)')
-    parser.add_argument('--ids-only', action='store_true', help='Print only task IDs')
+    parser.add_argument('--task-ids', action='store_true', help='Print only task IDs')
     parser.add_argument('--dev', action='store_true', help='Choose tasks with num_steps == 1 for development')
 
     args = parser.parse_args()
@@ -350,7 +361,7 @@ if __name__ == '__main__':
     else:
         metadata = choose_eval_tasks(metadata, args.seed)
 
-    if args.ids_only:
+    if args.task_ids:
         for task_id in metadata.keys():
             print(task_id)
     elif args.output:
@@ -358,7 +369,11 @@ if __name__ == '__main__':
             1 for m in metadata.values()
             if m['color_invariance'] >= INVARIANCE_THRESHOLD and m['dihedral_invariance'] >= INVARIANCE_THRESHOLD
         )
+        test_count = sum(
+            m['num_test'] for m in metadata.values()
+        )
         print(f"Tasks solvable by verifiers: {solvable_count}/{len(metadata)} ({round(100 * solvable_count / len(metadata), 2)}%)")
+        print(f"Num tests: {test_count}")
         save_dataset_to_file(metadata, args.output, args.seed)
     else:
         print_dataset_tasks(metadata, args.seed)
