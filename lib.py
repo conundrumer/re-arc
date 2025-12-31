@@ -28,9 +28,15 @@ class TaskMetadata(TypedDict):
     dihedral_invariance: float
     num_steps: int
 
+INVARIANCE_THRESHOLD = 0.5
+def is_invariant(task_metadata: TaskMetadata):
+    return (
+        task_metadata['color_invariance'] >= INVARIANCE_THRESHOLD and
+        task_metadata['dihedral_invariance'] >= INVARIANCE_THRESHOLD
+    )
+
 GEN_ATTEMPTS = 100
 COLOR_ATTEMPTS = 100
-INVARIANCE_THRESHOLD = 0.5
 def generate_examples(
     task_id: str,
     num_examples: int = 4,
@@ -151,12 +157,11 @@ def generate_examples(
 
     return examples
 
-MIN_STEPS = 14
 def choose_eval_tasks(metadata: dict[str, TaskMetadata], seed: int):
     """
     Filter tasks for evaluation based on:
     1. Tasks unsolved by icecuber (score == -1)
-    2. Tasks with num_steps >= MIN_STEPS
+    2. Tasks with num_steps >= MIN_STEPS (different for invariant tasks)
     3. Choose one random representative from each duplicate group
     """
     import csv
@@ -192,16 +197,16 @@ def choose_eval_tasks(metadata: dict[str, TaskMetadata], seed: int):
         # Filter by icecuber unsolved
         if task_id not in icecuber_unsolved:
             continue
-
-        if task_metadata['num_steps'] < MIN_STEPS:
-            continue
+        
+        if is_invariant(task_metadata):
+            if task_metadata['num_steps'] < 38:
+                continue
+        else:
+            if task_metadata['num_steps'] < 13:
+                continue
 
         # Choose one from duplicates
-        # task_id = task_to_representative.get(task_id, task_id)
-
-        # actually let's exclude the duplicate to get a nice round number of tasks: 120
-        if any(task_id in group for group in duplicate_groups):
-            continue
+        task_id = task_to_representative.get(task_id, task_id)
 
         filtered[task_id] = task_metadata
 
@@ -365,14 +370,18 @@ if __name__ == '__main__':
         for task_id in metadata.keys():
             print(task_id)
     elif args.output:
+        # for task_id, m in metadata.items():
+        #     if is_invariant(m):
+        #         print(task_id)
+        
         solvable_count = sum(
             1 for m in metadata.values()
-            if m['color_invariance'] >= INVARIANCE_THRESHOLD and m['dihedral_invariance'] >= INVARIANCE_THRESHOLD
-        )
+            if m['color_invariance'] >= INVARIANCE_THRESHOLD)
+        print(f"Tasks brute-forceable by verifiers: {solvable_count}/{len(metadata)} ({round(100 * solvable_count / len(metadata), 2)}%)")
+       
         test_count = sum(
             m['num_test'] for m in metadata.values()
         )
-        print(f"Tasks solvable by verifiers: {solvable_count}/{len(metadata)} ({round(100 * solvable_count / len(metadata), 2)}%)")
         print(f"Num tests: {test_count}")
         save_dataset_to_file(metadata, args.output, args.seed)
     else:
